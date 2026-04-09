@@ -11,9 +11,11 @@ def word_to_pdf(docx_file):
     """Convert a .docx file-like object to PDF. Returns BytesIO."""
     doc = Document(docx_file)
     output = io.BytesIO()
-    pdf = SimpleDocTemplate(output, pagesize=letter,
-                            rightMargin=50, leftMargin=50,
-                            topMargin=60, bottomMargin=60)
+    pdf = SimpleDocTemplate(
+        output, pagesize=letter,
+        rightMargin=50, leftMargin=50,
+        topMargin=60, bottomMargin=60
+    )
     styles = getSampleStyleSheet()
     story = []
 
@@ -22,20 +24,42 @@ def word_to_pdf(docx_file):
         if not text:
             story.append(Spacer(1, 8))
             continue
-        # Basic heading detection
         if para.style.name.startswith('Heading 1'):
             style = styles['Heading1']
         elif para.style.name.startswith('Heading 2'):
             style = styles['Heading2']
+        elif para.style.name.startswith('Heading 3'):
+            style = styles['Heading3']
         else:
             style = styles['Normal']
-        story.append(Paragraph(text, style))
-        story.append(Spacer(1, 4))
+
+        full_text = ''
+        for run in para.runs:
+            run_text = run.text.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
+            if run.bold and run.italic:
+                full_text += f'<b><i>{run_text}</i></b>'
+            elif run.bold:
+                full_text += f'<b>{run_text}</b>'
+            elif run.italic:
+                full_text += f'<i>{run_text}</i>'
+            else:
+                full_text += run_text
+
+        if full_text.strip():
+            try:
+                story.append(Paragraph(full_text, style))
+                story.append(Spacer(1, 4))
+            except Exception:
+                clean = para.text.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
+                story.append(Paragraph(clean, styles['Normal']))
+                story.append(Spacer(1, 4))
+
+    if not story:
+        story.append(Paragraph('Empty document', styles['Normal']))
 
     pdf.build(story)
     output.seek(0)
     return output
-
 
 def pdf_to_word(pdf_file):
     """Convert a PDF file-like object to .docx. Returns BytesIO."""
