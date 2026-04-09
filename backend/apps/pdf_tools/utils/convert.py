@@ -24,11 +24,13 @@ def word_to_pdf(docx_file):
         if not text:
             story.append(Spacer(1, 8))
             continue
-        if para.style.name.startswith('Heading 1'):
+
+        style_name = para.style.name if para.style else ''
+        if style_name.startswith('Heading 1'):
             style = styles['Heading1']
-        elif para.style.name.startswith('Heading 2'):
+        elif style_name.startswith('Heading 2'):
             style = styles['Heading2']
-        elif para.style.name.startswith('Heading 3'):
+        elif style_name.startswith('Heading 3'):
             style = styles['Heading3']
         else:
             style = styles['Normal']
